@@ -1,0 +1,31 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-image: url("behemoth.png");
+    overflow: hidden;
+    color: white;
+  }
+
+  .top-text {
+    position: absolute;
+    top: 15%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 32px;
+    font-weight: bold;
+    text-decoration: none;
+  }
+  
+  .bottom-text {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 16px;
+    text-decoration: none;
+  }
+
+  .bottom-text a {
+    font-size: 14px;
+    color: white;
+  }
