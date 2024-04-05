@@ -2,7 +2,9 @@
 ## The chrome extension to redirect forbidden websites.
 
 ### TODO:
-- [ ] Add GUI configuration settings.
+- [X] Add GUI configuration settings to modify urls to redirect.
+- [ ] Add GUI configuration settings to modify redirect destination url.
+- [ ] Redesign configuration settings.
 - [ ] Publish to chrome web store.
 ---
 
