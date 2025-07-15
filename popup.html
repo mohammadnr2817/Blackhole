@@ -1,15 +1,27 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Blackhole</title>
-  <script src="popup.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blackhole</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h2 style="text-align: center;" >This is the Blackhole!</h2>
-    <input type="text" id="field_add_url" placeholder="Enter URL to redirect">
-    <button id="btn_add_url">Add</button>
-    <br>
-  <h3>Current Redirection List</h3>
-  <ul id="list_urls"></ul>
+    <div class="container">
+        <header>
+            <h1>Blackhole</h1>
+            <p>Focus on what matters.</p>
+        </header>
+
+        <main>
+            <div class="input-group">
+                <input type="text" id="field_add_url" placeholder="Enter a website to block...">
+                <button id="btn_add_url">+</button>
+            </div>
+            <ul id="list_urls">
+                </ul>
+        </main>
+    </div>
+    <script src="popup.js"></script>
 </body>
 </html>
