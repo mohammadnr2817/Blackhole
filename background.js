@@ -4,12 +4,16 @@ const DEFAULT_SETTINGS = {
   removalPassword: "",
 };
 
+const TEMPORARY_ALLOW_DURATION_MS = 60 * 1000;
+const temporarilyAllowedUrls = new Map();
+
 const MESSAGE_TYPES = {
   ADD_URL: "add-url",
   CLEAR_REMOVAL_PASSWORD: "clear-removal-password",
   GET_STATE: "get-state",
   REMOVE_URL: "remove-url",
   SAVE_SETTINGS: "save-settings",
+  UNLOCK_URL: "unlock-url",
 };
 
 function normalizeSettings(data) {
@@ -37,11 +41,15 @@ async function saveSettings(settings) {
   await chrome.storage.local.set({ data: settings });
 }
 
-function getRedirectUrl(settings) {
+function getRedirectUrl(settings, blockedUrl = "") {
   const url = settings.redirectUrl.trim();
 
   if (!url) {
-    return chrome.runtime.getURL("redirect.html");
+    const redirectUrl = new URL(chrome.runtime.getURL("redirect.html"));
+    if (blockedUrl) {
+      redirectUrl.searchParams.set("blocked", blockedUrl);
+    }
+    return redirectUrl.href;
   }
 
   if (/^https?:\/\//i.test(url) || url.startsWith("moz-extension://") || url.startsWith("chrome-extension://")) {
@@ -72,6 +80,34 @@ function isRedirectDestination(currentUrl, destination) {
   } catch (error) {
     return currentUrl === destination;
   }
+}
+
+function normalizeUrlHref(url) {
+  try {
+    return new URL(url).href;
+  } catch (error) {
+    return url;
+  }
+}
+
+function allowUrlTemporarily(url) {
+  temporarilyAllowedUrls.set(normalizeUrlHref(url), Date.now() + TEMPORARY_ALLOW_DURATION_MS);
+}
+
+function isUrlTemporarilyAllowed(url) {
+  const href = normalizeUrlHref(url);
+  const expiresAt = temporarilyAllowedUrls.get(href);
+
+  if (!expiresAt) {
+    return false;
+  }
+
+  if (Date.now() > expiresAt) {
+    temporarilyAllowedUrls.delete(href);
+    return false;
+  }
+
+  return true;
 }
 
 function getUrlCandidate(value) {
@@ -170,6 +206,8 @@ async function handleMessage(message) {
       return savePopupSettings(settings, message);
     case MESSAGE_TYPES.CLEAR_REMOVAL_PASSWORD:
       return clearRemovalPassword(settings, message.password);
+    case MESSAGE_TYPES.UNLOCK_URL:
+      return unlockUrl(settings, url, message.password);
     case MESSAGE_TYPES.GET_STATE:
       return getPublicState(settings, { ok: true });
     default:
@@ -263,16 +301,49 @@ async function clearRemovalPassword(settings, password) {
   });
 }
 
+async function unlockUrl(settings, url, password) {
+  if (!url) {
+    return getPublicState(settings, {
+      ok: false,
+      error: "No blocked site found.",
+    });
+  }
+
+  if (!settings.removalPassword) {
+    return getPublicState(settings, {
+      ok: false,
+      error: "Set a removal password before opening blocked sites.",
+    });
+  }
+
+  if (password !== settings.removalPassword) {
+    return getPublicState(settings, {
+      ok: false,
+      error: "Incorrect password.",
+    });
+  }
+
+  allowUrlTemporarily(url);
+  return getPublicState(settings, {
+    ok: true,
+    url,
+  });
+}
+
 // Observe chrome tabs info to take action when needed
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   if (!tab.url) {
     return;
   }
 
+  if (isUrlTemporarilyAllowed(tab.url)) {
+    return;
+  }
+
   const settings = await getSettings();
-  const destination = getRedirectUrl(settings);
 
   for (const url of settings.urls) {
+    const destination = getRedirectUrl(settings, tab.url);
     if (isBlockedUrl(tab.url, url) && !isRedirectDestination(tab.url, destination)) {
       await chrome.tabs.update(tab.id, { url: destination });
       return;

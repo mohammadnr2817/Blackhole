@@ -4,12 +4,28 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Blackhole</title>
-  <link rel="stylesheet" href="redirect.css"> </head>
+  <link rel="stylesheet" href="redirect.css">
+</head>
 <body class="body">
   <img class="back" src="behemoth.png" alt="">
-  <div class="top-text">This is the BlackHole!</div>
-  <div class="bottom-text">
-    original image from <a href="https://images.nasa.gov/details/behemoth-black-hole-found-in-an-unlikely-place_26209716511_o">NASA</a>
-  </div>
+  <main class="content">
+    <p class="eyebrow">Blackhole</p>
+    <h1>Blocked before the event horizon.</h1>
+    <p class="message">You tried to open:</p>
+    <a id="blocked_url" class="blocked-url" href="#"></a>
+
+    <form id="unlock_form" class="unlock-form">
+      <label for="unlock_password">Enter password to open this site</label>
+      <div class="unlock-row">
+        <input type="password" id="unlock_password" placeholder="Password">
+        <button type="submit">Open site</button>
+      </div>
+      <p id="unlock_status" class="status" role="status"></p>
+    </form>
+  </main>
+  <footer class="credit">
+    Image from <a href="https://images.nasa.gov/details/behemoth-black-hole-found-in-an-unlikely-place_26209716511_o">NASA</a>
+  </footer>
+  <script src="redirect.js"></script>
 </body>
 </html>
