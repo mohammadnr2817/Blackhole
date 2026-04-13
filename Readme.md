@@ -8,6 +8,8 @@ Blackhole is a lightweight Chrome and Firefox extension for redirecting distract
 
 - Add URL fragments or domains to a blocked list.
 - Redirect matching tabs to the built-in Blackhole page.
+- Show the blocked URL on the Blackhole page.
+- Open a blocked site temporarily after password confirmation.
 - Configure a custom redirect destination.
 - Set a removal password before blocked URLs can be removed.
 - Works locally in Chrome and Firefox.
@@ -81,6 +83,7 @@ popup.html      Extension popup markup
 popup.js        Popup behavior and settings UI
 style.css       Popup styling
 redirect.html   Built-in redirect page
+redirect.js     Built-in redirect page behavior and unlock flow
 redirect.css    Built-in redirect page styling
 ```
 
@@ -98,7 +101,10 @@ redirect.css    Built-in redirect page styling
 - [x] Add GUI configuration settings to modify redirect destination URL.
 - [x] Add GUI configuration to set a password for URL removal.
 - [x] Redesign configuration settings.
-- [x] Add manual instruction guide.
+- [ ] Implement reverse mode to allow access to only selected hostnames and block access to others.
+- [ ] Implement custom redirection for a single blocked hostname.
+- [ ] Implement time based blocking to access hostnames at specified times.
+- [x] Add manual instruction guide to readme.
 - [ ] Publish to the Chrome Web Store.
 - [ ] Publish to the Firefox Add-ons.
 
