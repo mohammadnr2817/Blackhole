@@ -1,12 +1,6 @@
-let hasRemovalPassword = false;
-let currentUrls = [];
-
 const MESSAGE_TYPES = {
   ADD_URL: "add-url",
-  CLEAR_REMOVAL_PASSWORD: "clear-removal-password",
   GET_STATE: "get-state",
-  REMOVE_URL: "remove-url",
-  SAVE_SETTINGS: "save-settings",
 };
 
 const elements = {};
@@ -15,19 +9,16 @@ document.addEventListener("DOMContentLoaded", () => {
   cacheElements();
   bindEvents();
   refreshState();
+  renderCurrentSite();
 });
 
 function cacheElements() {
   elements.addUrlButton = document.getElementById("btn_add_url");
-  elements.clearPasswordButton = document.getElementById("btn_clear_password");
-  elements.currentPasswordInput = document.getElementById("field_current_password");
+  elements.blockCurrentButton = document.getElementById("btn_block_current");
+  elements.currentSite = document.getElementById("current_site");
   elements.emptyState = document.getElementById("empty_state");
   elements.list = document.getElementById("list_urls");
-  elements.newPasswordInput = document.getElementById("field_removal_password");
-  elements.passwordRemoveGroup = document.getElementById("password_remove_group");
-  elements.passwordState = document.getElementById("password_state");
-  elements.redirectUrlInput = document.getElementById("field_redirect_url");
-  elements.saveSettingsButton = document.getElementById("btn_save_settings");
+  elements.openSettingsButton = document.getElementById("btn_open_settings");
   elements.status = document.getElementById("status_message");
   elements.urlCount = document.getElementById("url_count");
   elements.urlInput = document.getElementById("field_add_url");
@@ -35,11 +26,9 @@ function cacheElements() {
 
 function bindEvents() {
   elements.addUrlButton.addEventListener("click", addUrl);
-  elements.clearPasswordButton.addEventListener("click", clearRemovalPassword);
-  elements.saveSettingsButton.addEventListener("click", saveSettings);
+  elements.blockCurrentButton.addEventListener("click", blockCurrentSite);
+  elements.openSettingsButton.addEventListener("click", openSettings);
   elements.urlInput.addEventListener("keydown", (event) => handleEnter(event, addUrl));
-  elements.newPasswordInput.addEventListener("keydown", (event) => handleEnter(event, saveSettings));
-  elements.currentPasswordInput.addEventListener("keydown", (event) => handleEnter(event, clearRemovalPassword));
 }
 
 function handleEnter(event, action) {
@@ -62,18 +51,9 @@ function updateState(response) {
     return;
   }
 
-  hasRemovalPassword = response.hasRemovalPassword;
-  elements.redirectUrlInput.value = response.redirectUrl || "";
-  elements.passwordState.textContent = hasRemovalPassword
-    ? "Removal password is active. Enter it below to remove protection."
-    : "No removal password set.";
-  elements.passwordRemoveGroup.hidden = !hasRemovalPassword;
-
-  if (!hasRemovalPassword) {
-    elements.currentPasswordInput.value = "";
-  }
-
-  renderUrlList(response.urls || []);
+  updateBlockedVisitCount(response.blockedVisitCount || 0);
+  renderCurrentSite(response.urls || []);
+  renderRecentBlockedUrls(response.recentBlockedUrls || []);
   setStatus(response.error || response.notice || "", !response.ok);
 }
 
@@ -89,112 +69,96 @@ async function addUrl() {
   elements.urlInput.value = "";
 }
 
-async function saveSettings() {
-  const response = await sendMessage({
-    type: MESSAGE_TYPES.SAVE_SETTINGS,
-    redirectUrl: elements.redirectUrlInput.value,
-    removalPassword: elements.newPasswordInput.value,
-  });
+async function blockCurrentSite() {
+  const currentSite = await getCurrentSite();
 
-  updateState(response);
-  elements.newPasswordInput.value = "";
+  if (!currentSite) {
+    setStatus("Open a website tab first.", true);
+    return;
+  }
+
+  updateState(await sendMessage({ type: MESSAGE_TYPES.ADD_URL, url: currentSite }));
 }
 
-async function clearRemovalPassword() {
-  const response = await sendMessage({
-    type: MESSAGE_TYPES.CLEAR_REMOVAL_PASSWORD,
-    password: elements.currentPasswordInput.value,
-  });
-
-  updateState(response);
-  elements.currentPasswordInput.value = "";
+async function openSettings() {
+  await chrome.runtime.openOptionsPage();
+  window.close();
 }
 
-function renderUrlList(urls) {
-  currentUrls = urls;
+async function renderCurrentSite(blockedUrls = []) {
+  const currentSite = await getCurrentSite();
+  const isAlreadyBlocked = currentSite
+    ? blockedUrls.some((blockedUrl) => isCurrentSiteBlocked(currentSite, blockedUrl))
+    : false;
+
+  elements.currentSite.textContent = currentSite || "Open a website tab to block it quickly.";
+  elements.blockCurrentButton.disabled = !currentSite || isAlreadyBlocked;
+  elements.blockCurrentButton.textContent = isAlreadyBlocked
+    ? "Current site is blocked"
+    : "Block current site";
+}
+
+async function getCurrentSite() {
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+  const activeUrl = tabs[0]?.url;
+
+  if (!activeUrl) {
+    return "";
+  }
+
+  try {
+    const url = new URL(activeUrl);
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      return "";
+    }
+    return url.hostname.replace(/^www\./, "");
+  } catch (error) {
+    return "";
+  }
+}
+
+function isCurrentSiteBlocked(hostname, blockedEntry) {
+  const entry = blockedEntry.trim();
+
+  if (!entry) {
+    return false;
+  }
+
+  try {
+    const blockedUrl = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(entry) ? entry : `https://${entry}`);
+    const normalizedHostname = normalizeHostname(hostname);
+    const blockedHostname = normalizeHostname(blockedUrl.hostname);
+    return normalizedHostname === blockedHostname || normalizedHostname.endsWith(`.${blockedHostname}`);
+  } catch (error) {
+    return false;
+  }
+}
+
+function normalizeHostname(hostname) {
+  return hostname.toLowerCase().replace(/^www\./, "").replace(/\.$/, "");
+}
+
+function renderRecentBlockedUrls(urls) {
   elements.list.innerHTML = "";
   elements.emptyState.hidden = urls.length > 0;
-  elements.urlCount.textContent = `${urls.length} blocked`;
 
   for (const url of urls) {
     elements.list.appendChild(createUrlListItem(url));
   }
 }
 
+function updateBlockedVisitCount(count) {
+  elements.urlCount.textContent = `${count} blocks`;
+}
+
 function createUrlListItem(url) {
   const listItem = document.createElement("li");
   const label = document.createElement("span");
-  const removeButton = document.createElement("button");
 
   label.textContent = url;
-  removeButton.type = "button";
-  removeButton.textContent = "Remove";
-  removeButton.addEventListener("click", () => requestRemoval(url));
 
-  listItem.append(label, removeButton);
+  listItem.append(label);
   return listItem;
-}
-
-function requestRemoval(url) {
-  if (!hasRemovalPassword) {
-    removeUrl(url);
-    return;
-  }
-
-  renderUrlList(currentUrls);
-  showPasswordPrompt(url);
-}
-
-function showPasswordPrompt(url) {
-  const listItems = document.querySelectorAll("#list_urls li");
-
-  for (const item of listItems) {
-    const label = item.querySelector("span");
-    if (!label) {
-      continue;
-    }
-
-    if (label.textContent !== url) {
-      item.classList.remove("confirming");
-      continue;
-    }
-
-    item.classList.add("confirming");
-    item.innerHTML = "";
-
-    const passwordInput = document.createElement("input");
-    const confirmButton = document.createElement("button");
-    const cancelButton = document.createElement("button");
-
-    passwordInput.type = "password";
-    passwordInput.placeholder = "Password";
-    confirmButton.type = "button";
-    confirmButton.textContent = "Confirm";
-    cancelButton.type = "button";
-    cancelButton.textContent = "Cancel";
-    cancelButton.className = "ghost-button";
-
-    passwordInput.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
-        removeUrl(url, passwordInput.value);
-      }
-    });
-    confirmButton.addEventListener("click", () => removeUrl(url, passwordInput.value));
-    cancelButton.addEventListener("click", () => renderUrlList(currentUrls));
-
-    item.appendChild(passwordInput);
-    item.appendChild(confirmButton);
-    item.appendChild(cancelButton);
-    passwordInput.focus();
-  }
-}
-
-async function removeUrl(url, password = "") {
-  updateState(await sendMessage({
-    type: MESSAGE_TYPES.REMOVE_URL,
-    url,
-    password,
-  }));
 }
 
 function setStatus(message, isError) {

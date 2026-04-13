@@ -1,10 +1,13 @@
 const DEFAULT_SETTINGS = {
   urls: [],
+  blockedVisitCount: 0,
+  recentBlockedUrls: [],
   redirectUrl: "",
   removalPassword: "",
 };
 
 const TEMPORARY_ALLOW_DURATION_MS = 60 * 1000;
+const RECENT_BLOCKED_LIMIT = 3;
 const temporarilyAllowedUrls = new Map();
 
 const MESSAGE_TYPES = {
@@ -25,6 +28,8 @@ function normalizeSettings(data) {
     return {
       ...DEFAULT_SETTINGS,
       ...data,
+      blockedVisitCount: Number.isInteger(data.blockedVisitCount) ? data.blockedVisitCount : 0,
+      recentBlockedUrls: Array.isArray(data.recentBlockedUrls) ? data.recentBlockedUrls : [],
       urls: Array.isArray(data.urls) ? data.urls : [],
     };
   }
@@ -166,10 +171,22 @@ function isBlockedUrl(tabUrl, blockedEntry) {
 function getPublicState(settings, status = {}) {
   return {
     urls: settings.urls,
+    blockedVisitCount: settings.blockedVisitCount,
+    recentBlockedUrls: settings.recentBlockedUrls,
     redirectUrl: settings.redirectUrl,
     hasRemovalPassword: Boolean(settings.removalPassword),
     ...status,
   };
+}
+
+async function rememberBlockedUrl(settings, blockedUrl) {
+  const href = normalizeUrlHref(blockedUrl);
+  settings.blockedVisitCount += 1;
+  settings.recentBlockedUrls = [
+    href,
+    ...settings.recentBlockedUrls.filter((url) => normalizeUrlHref(url) !== href),
+  ].slice(0, RECENT_BLOCKED_LIMIT);
+  await saveSettings(settings);
 }
 
 // Observe chrome message listener to handle list and settings events
@@ -345,6 +362,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   for (const url of settings.urls) {
     const destination = getRedirectUrl(settings, tab.url);
     if (isBlockedUrl(tab.url, url) && !isRedirectDestination(tab.url, destination)) {
+      await rememberBlockedUrl(settings, tab.url);
       await chrome.tabs.update(tab.id, { url: destination });
       return;
     }

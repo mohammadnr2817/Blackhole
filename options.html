@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blackhole Options</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <p class="eyebrow">Blackhole</p>
+      <h1>Extension options</h1>
+      <p class="intro">Manage redirects, blocked websites, and password protection.</p>
+    </header>
+
+    <main class="layout">
+      <section class="panel">
+        <div class="section-title">
+          <div>
+            <h2>Blocked websites</h2>
+            <p>Add domains or URL paths to redirect when they are opened.</p>
+          </div>
+          <span id="url_count" class="count">0 entries</span>
+        </div>
+
+        <label for="field_add_url">Blocked website</label>
+        <div class="input-group">
+          <input type="text" id="field_add_url" placeholder="example.com">
+          <button id="btn_add_url">Add</button>
+        </div>
+        <p class="hint">Use a domain like <code>example.com</code> or a path like <code>example.com/watch</code>.</p>
+
+        <div class="list-header">
+          <h3>Blocked list</h3>
+          <span id="empty_state">No blocked sites yet.</span>
+        </div>
+        <ul id="list_urls"></ul>
+      </section>
+
+      <section class="panel">
+        <h2>Redirect settings</h2>
+        <label for="field_redirect_url">Redirect destination</label>
+        <input type="text" id="field_redirect_url" placeholder="Leave empty for the Blackhole page">
+        <p class="hint">Leave empty to use the built-in Blackhole page with password unlock.</p>
+
+        <h2>Password protection</h2>
+        <label for="field_removal_password">Set or change password</label>
+        <input type="password" id="field_removal_password" placeholder="Enter a new password">
+        <p id="password_state" class="hint">No removal password set.</p>
+
+        <div id="password_remove_group" class="password-remove-group" hidden>
+          <input type="password" id="field_current_password" placeholder="Current password">
+          <button id="btn_clear_password" class="danger-button">Remove password</button>
+        </div>
+
+        <button id="btn_save_settings" class="secondary-button">Save settings</button>
+        <p id="status_message" class="status" role="status"></p>
+      </section>
+    </main>
+  </div>
+  <script src="options.js"></script>
+</body>
+</html>
