@@ -74,6 +74,59 @@ function isRedirectDestination(currentUrl, destination) {
   }
 }
 
+function getUrlCandidate(value) {
+  const candidate = value.trim();
+
+  if (!candidate) {
+    return "";
+  }
+
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(candidate)) {
+    return candidate;
+  }
+
+  return `https://${candidate}`;
+}
+
+function normalizeHostname(hostname) {
+  return hostname.toLowerCase().replace(/^www\./, "").replace(/\.$/, "");
+}
+
+function isSameDomainOrSubdomain(hostname, blockedHostname) {
+  const normalizedHostname = normalizeHostname(hostname);
+  const normalizedBlockedHostname = normalizeHostname(blockedHostname);
+
+  return normalizedHostname === normalizedBlockedHostname
+    || normalizedHostname.endsWith(`.${normalizedBlockedHostname}`);
+}
+
+function isBlockedUrl(tabUrl, blockedEntry) {
+  const entry = getUrlCandidate(blockedEntry);
+
+  if (!entry) {
+    return false;
+  }
+
+  try {
+    const currentUrl = new URL(tabUrl);
+    const blockedUrl = new URL(entry);
+
+    if (!isSameDomainOrSubdomain(currentUrl.hostname, blockedUrl.hostname)) {
+      return false;
+    }
+
+    if (blockedUrl.pathname === "/" && !blockedUrl.search && !blockedUrl.hash) {
+      return true;
+    }
+
+    const blockedPath = `${blockedUrl.pathname}${blockedUrl.search}${blockedUrl.hash}`;
+    const currentPath = `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`;
+    return currentPath.startsWith(blockedPath);
+  } catch (error) {
+    return false;
+  }
+}
+
 function getPublicState(settings, status = {}) {
   return {
     urls: settings.urls,
@@ -220,7 +273,7 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
   const destination = getRedirectUrl(settings);
 
   for (const url of settings.urls) {
-    if (url && tab.url.includes(url) && !isRedirectDestination(tab.url, destination)) {
+    if (isBlockedUrl(tab.url, url) && !isRedirectDestination(tab.url, destination)) {
       await chrome.tabs.update(tab.id, { url: destination });
       return;
     }
