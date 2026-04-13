@@ -9,17 +9,48 @@
 <body>
     <div class="container">
         <header>
-            <h1>Blackhole</h1>
-            <p>Focus on what matters.</p>
+            <div>
+                <p class="eyebrow">Blackhole</p>
+                <h1>Focus guard</h1>
+            </div>
+            <span id="url_count" class="count">0 blocked</span>
         </header>
 
         <main>
-            <div class="input-group">
-                <input type="text" id="field_add_url" placeholder="Enter a website to block...">
-                <button id="btn_add_url">+</button>
-            </div>
-            <ul id="list_urls">
-                </ul>
+            <section class="section">
+                <label for="field_add_url">Blocked website</label>
+                <div class="input-group">
+                    <input type="text" id="field_add_url" placeholder="youtube.com">
+                    <button id="btn_add_url">Add</button>
+                </div>
+                <p class="hint">Use a domain or URL fragment. Any matching tab will be redirected.</p>
+            </section>
+
+            <section class="section">
+                <div class="section-title">
+                    <h2>Blocked list</h2>
+                    <span id="empty_state">No blocked sites yet.</span>
+                </div>
+                <ul id="list_urls"></ul>
+            </section>
+
+            <section class="section settings">
+                <h2>Settings</h2>
+                <label for="field_redirect_url">Redirect destination</label>
+                <input type="text" id="field_redirect_url" placeholder="Leave empty for the black hole page">
+
+                <label for="field_removal_password">Removal password</label>
+                <input type="password" id="field_removal_password" placeholder="Enter a new password">
+                <p id="password_state" class="hint">No removal password set.</p>
+
+                <div id="password_remove_group" class="password-remove-group" hidden>
+                    <input type="password" id="field_current_password" placeholder="Current password">
+                    <button id="btn_clear_password" class="danger-button">Remove password</button>
+                </div>
+
+                <button id="btn_save_settings" class="secondary-button">Save settings</button>
+                <p id="status_message" class="status" role="status"></p>
+            </section>
         </main>
     </div>
     <script src="popup.js"></script>
