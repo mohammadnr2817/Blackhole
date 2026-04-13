@@ -100,6 +100,7 @@ redirect.css    Built-in redirect page styling
 - [x] Redesign configuration settings.
 - [x] Add manual instruction guide.
 - [ ] Publish to the Chrome Web Store.
+- [ ] Publish to the Firefox Add-ons.
 
 ## References
 
