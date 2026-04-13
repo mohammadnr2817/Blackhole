@@ -1,10 +1,11 @@
 # This is the Blackhole! 🕳️
-## The chrome extension to redirect forbidden websites.
+## The chrome/firefox extension to redirect forbidden websites.
 
 ### Preview:
 ![preview.png](preview.png)
 
 ### TODO:
+- [X] Add Firefix support.
 - [X] Add GUI configuration settings to modify urls to redirect.
 - [ ] Add GUI configuration settings to modify redirect destination url.
 - [ ] Add GUI configuration set password to confirm url removal.
